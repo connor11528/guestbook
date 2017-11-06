@@ -62,3 +62,72 @@ php artisan tinker
 > \DB::table('signatures')->get(); // view all records
 ```
 
+### Routes and Controllers
+
+In this section we set up controllers for reporting signatures, displaying them, adding them and displaying an individual resource. We're building this as an API so I thought it was cool
+that the author namespaced the controllers into an Api folder when creating them. That was as simple as `php artisan make:controller Api/SignatureController`.
+Additionally, we use a Laravel [resource controller](https://laravel.com/docs/5.5/controllers#resource-controllers) but specify that we do not want ALL the routes, only a few:
+
+```angular2html
+Route::resource('signatures', 'Api\SignatureController')->only(['index', 'store', 'show']);
+```
+
+Most interestingly, in our controller we make calls to and return instances of `SignatureResource`, which we haven't defined yet.
+
+There's also a nifty call to get the latest Signatures and ignore all signatures that have been flagged:
+
+```angular2html
+$signatures = Signature::latest()
+            ->ignoreFlagged()
+            ->paginate(20);
+```
+
+The `ignoreFlagged` method call is a custom query scope that we define with the convention of "scopeMethodNameInCamelCase". We defined the custom query scope in the Signature model:
+
+```angular2html
+public function scopeIgnoreFlagged($query)
+{
+    return $query->where('flagged_at', null);
+}
+```
+
+The calls to latest() and paginate() are default parts of the [Eloquent ORM](https://laravel.com/docs/5.5/eloquent).
+
+If you're new to Laravel it is also worth checking out the [route model binding](https://laravel.com/docs/5.5/routing#route-model-binding) included in the reporting signature route and controller.
+
+The route looks like:
+
+```angular2html
+Route::put('signatures/{signature}/report', 'Api\ReportSignature@update');
+```
+
+Including the signature like this actually gives us access to the individual signature in our controller. So in the update method we pass in the database instance of the signature that we want to flag:
+
+```angular2html
+public function update(Signature $signature)
+{
+    $signature->flag();
+
+    return $signature;
+}
+```
+
+Flag is a custom method we define in the Signature model.
+
+### The Signature Resource 
+
+Eloquent Resources ([docs](https://laravel.com/docs/5.5/eloquent-resources)) are new in Laravel 5.5. Resources are a middle layer between your database and the JSON responses you send out to end users.
+In our case we're going to modify the data so we don't send out people's email addresses and send an avatar for their image.
+
+> Jeffery Way posted a Laracast about API Resources: [What's New in Laravel 5.5: API Resources](https://laracasts.com/series/whats-new-in-laravel-5-5/episodes/20)
+
+In order to define a custom `avatar` attribute for signature instances we use the synatax "getAttributNameAttribute" syntax for out function:
+
+```angular2html
+public function getAvatarAttribute()
+{
+    return sprintf('https://www.gravatar.com/avatar/%s?s=100', md5($this->email));
+}
+```
+
+`sprintf` returns a formatted string in PHP and `md5` creates a hash. Gravatar is a service that grabs a photo for the user based on their email address.
