@@ -131,3 +131,39 @@ public function getAvatarAttribute()
 ```
 
 `sprintf` returns a formatted string in PHP and `md5` creates a hash. Gravatar is a service that grabs a photo for the user based on their email address.
+
+### Vue.js frontend
+
+@rachidlaasri builds out an awesome Vue.js frontend and takes advantage of a vue-paginate prebuilt component ([avail here](https://github.com/lokyoung/vuejs-paginate)). The pagination logic is especially interesting in the Signatures vue component. 
+Reporting a signature and then removing it from the UI with lodash is pretty neat also:
+
+```angular2html
+report(id) {
+    if(confirm('Are you sure you want to report this signature?')) {
+        axios.put('api/signatures/'+id+'/report')
+        .then(response => this.removeSignature(id));
+    }
+},
+
+removeSignature(id) {
+    this.signatures = _.remove(this.signatures, function (signature) {
+        return signature.id !== id;
+    });
+}
+```
+
+Here we take advantage of lodash [remove method](https://lodash.com/docs/#remove).
+
+On our SignatureForm.vue there is a success message that displays conditionally when our signature is submitted:
+
+```angular2html
+<div class="alert alert-success" v-if="saved">
+    <strong>Success!</strong> Your signature has been saved successfully.
+</div>
+```
+
+### Conclusion
+
+Overall very good tutorial about building an API with Laravel 5.5 that hooks up to a Vue 2 frontend. We used a lot of Laravel configuration concepts to extend our models and even built a resource layer to modify the JSON that we return to Vue.
+
+Make sure to check out the full tutorial [on Scotch.io](https://scotch.io/tutorials/build-a-guestbook-with-laravel-and-vuejs)
